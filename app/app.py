@@ -1,19 +1,59 @@
+from flask import Flask, request, send_file, send_from_directory
 
-from flask import Flask, request, send_file
 import matplotlib.pyplot as plt
 import io
 import requests
 import matplotlib.font_manager as fm
 import datetime
+from transformers import pipeline
+import os
+import json
 
-app = Flask(__name__)
+HF_TOKEN = os.environ.get("HF_TOKEN")
+
+app = Flask(__name__, static_folder="static")
+
+import os
+import requests
+
+HF_TOKEN = os.environ.get("HF_TOKEN")  # set in HF Space secrets
+HF_ENDPOINT_URL = "https://kz08yefzhrfxf9fy.us-east-1.aws.endpoints.huggingface.cloud"
+
+def query_llama3(prompt):
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 150,
+            "temperature": 0.7,
+            "return_full_text": False
+        }
+    }
+
+    response = requests.post(HF_ENDPOINT_URL, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        raise Exception(f"Hugging Face endpoint error {response.status_code}: {response.text}")
+
+    try:
+        data = response.json()
+    except Exception as e:
+        raise Exception(f"Failed to parse JSON: {response.text}") from e
+
+    # Expecting Hugging Face endpoint to return list of dicts with "generated_text"
+    if isinstance(data, list) and "generated_text" in data[0]:
+        return data[0]["generated_text"]
+
+    raise Exception(f"Unexpected response format: {data}")
+
+
 
 def generate_paper_tape(text, bell_enabled=False):    
-    available_fonts = [f.name for f in fm.fontManager.ttflist]
-    for font in ["FreeMono", "Courier New"]:
-        if font in available_fonts:
-            plt.rcParams['font.family'] = font
-            break
+    plt.rcParams['font.family'] = 'monospace'
 
     header = "#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00"
     footer = "#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff,#ff"
@@ -32,12 +72,10 @@ def generate_paper_tape(text, bell_enabled=False):
     def get_visual_char(c):
         if isinstance(c, str) and len(c) == 1:
             code = ord(c)
-            if 0x00 <= code <= 0x1F:
-                return chr(0x2400 + code)
-            elif code == 0x7F:
-                return chr(0x2421)
+            if 0x20 <= code <= 0x7E:
+                return c  # printable ASCII
             else:
-                return c
+                return "."  # control character placeholder
         return c
 
     header_binary = [parse_hex_code(x) for x in header.split(",")]
@@ -95,7 +133,7 @@ def generate_paper_tape(text, bell_enabled=False):
             if bit == '1':
                 ax.add_patch(plt.Circle((x_offset, j * y_spacing_factor), data_hole_radius, color="black", fill=True))  
         ax.add_patch(plt.Circle((x_offset, sprocket_y * y_spacing_factor), sprocket_hole_radius, color="black", fill=True))
-        ax.text(x_offset, -1.5, char, fontsize=14, fontname="FreeMono", ha="center", va="top", color="white", rotation=0)
+        ax.text(x_offset, -1.5, char, fontsize=14, fontname="monospace", ha="center", va="top", color="white", rotation=0)
 
     ax.set_xticks([])
     ax.set_yticks([])
@@ -108,58 +146,49 @@ def generate_paper_tape(text, bell_enabled=False):
 
     return img_io, len(ascii_punch_codes)
 
+@app.route("/")
+def root():
+    return send_from_directory("static", "index.html")
+
+
 @app.route('/generate_paper_tape', methods=['POST'])
 def generate_tape():
-    system_prompt = (
-        "You are a Teletype Model 33 ASR from the year 1979, connected to a mainframe via serial cable. "
-        "You respond in short bursts of uppercase text as if printed on a paper tape. "
-        "Your language is efficient, mechanical, and dry. Limit output to a few words per line, like a real teletype outputting ASCII on paper tape. "
-        "Avoid punctuation unless absolutely necessary. Never apologize or explain. "
-    )
+    try:
+        data = request.get_json()
+        user_prompt = data.get("text", "")
+        bell_enabled = data.get("bell", False)
 
-    data = request.get_json()
-    user_prompt = data.get("text", "")
-    bell_enabled = data.get("bell", False)
+        if not user_prompt:
+            return "Error: No text provided", 400
 
-    if not user_prompt:
-        return "Error: No text provided", 400
+        full_prompt = (
+            "You are a Teletype Model 33 ASR from the year 1979, connected to a mainframe via serial cable. "
+            "You respond in short bursts of uppercase text as if printed on a paper tape. "
+            "Your language is efficient, mechanical, and dry. Limit output to a few words per line, like a real teletype outputting ASCII on paper tape. "
+            "Avoid punctuation unless absolutely necessary. Never apologize or explain.\n\n"
+            f"User: {user_prompt}\nTeletype:"
+        )
+        
+        completion = query_llama3(full_prompt)
 
-    response = requests.post("http://localhost:11434/api/generate", json={
-        "model": "qwen:0.5b",
-        "prompt": user_prompt,
-        "system": system_prompt,
-        "options": {"temperature": 0.5},
-        "stream": False
-    })
+        completion = completion.replace(full_prompt, "").strip()
+        
+        jam_detected = len(completion) > 250
+        if jam_detected:
+            completion = completion[:250]
 
-    if not response.ok:
-        return f"Ollama error: {response.text}", 500
+        img_io, punch_count = generate_paper_tape(completion, bell_enabled)
 
-    completion = response.json().get("response", "").strip()
-    max_chars = 500
-    if len(completion) > max_chars:
-        completion = completion[:max_chars]
-        jam_detected = True
-    else:
-        jam_detected = False
-
-    img_io, punch_count = generate_paper_tape(completion, bell_enabled)
-
-    ip_addr = request.remote_addr
-
-    log_line = (
-        f"[{datetime.datetime.now()}] "
-        f"IP: {ip_addr} | MODEL: qwen:0.5b | "
-        f"PROMPT: {user_prompt.strip()} || COMPLETION: {completion.strip().replace('\\n', ' ')[:500]}\n"
-    )
-
-    with open("usage.log", "a") as log_file:
-        log_file.write(log_line)
-
-    response = send_file(img_io, mimetype='image/png')
-    response.headers['X-Punch-Count'] = str(punch_count)
-    response.headers["X-Jam"] = "1" if jam_detected else "0"
-    return response
+        response = send_file(img_io, mimetype='image/png')
+        response.headers['X-Punch-Count'] = str(punch_count)
+        response.headers["X-Jam"] = "1" if jam_detected else "0"
+        return response
+    except Exception as e:
+        import traceback
+        print("🔥 Full traceback:", flush=True)
+        traceback.print_exc()
+        return f"Server error: {e}", 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=7860)
+

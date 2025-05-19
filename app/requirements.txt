@@ -1,4 +1,6 @@
 flask
 requests
-ollama
 matplotlib
+transformers
+torch
+

@@ -151,20 +151,20 @@
 
         <h2>Teletype Paper Tape Chatbot</h2>
 
-        <h4><u>Instructions</u><br>Choose your LLM<br>Power on the machine<br>Chat with the LLM<br>Power off to change models</h4>
+        <h4><u>Instructions</u><br>Power on the machine<br>Chat with the LLM<br>Power off when finished</h4>
 
         <div style="text-align: center; margin-top: 20px; position: relative;">
-            <img id="powerButton" src="button-off.png" width="100" style="cursor: pointer;" alt="Power Button">
+            <img id="powerButton" src="static/button-off.png" width="100" style="cursor: pointer;" alt="Power Button">
         </div>
 
         <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px;">
             <input type="text" id="inputText" placeholder="Enter text prompt ..." style="flex: 1; max-width: 600px; font-size: 1.3em;">
             <button onclick="generatePaperTape()" class="send-button" disabled>    
-                <img src="send_48dp_green.png" alt="Send" style="height: 48px; width: 48px;">
+                <img src="static/send_48dp_green.png" alt="Send" style="height: 48px; width: 48px;">
             </button>
         </div>
 
-        <audio id="clickSound" src="ttclick4.mp3" preload="auto" style="display: none;"></audio>
+        <audio id="clickSound" src="static/ttclick4.mp3" preload="auto" style="display: none;"></audio>
 
         <div style="display: flex; gap: 4px; justify-content: center; margin-top: 20px;">
             <div id="ksrLed" style="width: 20px; height: 20px; background-color: #222; border-radius: 50%; box-shadow: 0 0 3px #000;"></div>
@@ -194,13 +194,13 @@
 
             let isPoweredOn = false;
 
-            const startupSound = new Audio("tt-starting.mp3");
-            const loopSound = new Audio("tt-running.mp3");
-            const shutdownSound = new Audio("tt-stopping.mp3");
+            const startupSound = new Audio("static/tt-starting.mp3");
+            const loopSound = new Audio("static/tt-running.mp3");
+            const shutdownSound = new Audio("static/tt-stopping.mp3");
             loopSound.loop = true;
             const activeClickSounds = [];
 
-            const clickSound = new Audio("ttclick4.mp3");
+            const clickSound = new Audio("static/ttclick4.mp3");
             clickSound.volume = 1.0;
 
             function stopClickSounds() {
@@ -251,8 +251,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: inputText,
-                        bell: bellEnabled,
-                        model: document.getElementById("modelSelect").value
+                        bell: bellEnabled
                     })
                 })
                 .then(response => {
@@ -297,7 +296,7 @@
                             setTimeout(() => chunkScroll(remainingSteps - 1), scrollDelay);
                         } else {
                             if (isPoweredOn && bellEnabled) {
-                                const bell = new Audio("ding.mp3");
+                                const bell = new Audio("static/ding.mp3");
                                 bell.play();
                             }
                             document.getElementById("inputText").value = "";
@@ -367,7 +366,7 @@
                 const powerBtn = document.getElementById("powerButton");
 
                 powerBtn.classList.toggle("depressed", isPoweredOn);
-                powerBtn.src = isPoweredOn ? "button-on.png" : "button-off.png";
+                powerBtn.src = isPoweredOn ? "static/button-on.png" : "static/button-off.png";
                 powerBtn.classList.toggle("glow", isPoweredOn);
 
                 if (isPoweredOn) {
