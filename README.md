@@ -1,4 +1,4 @@
-# 🧵 Paper Tape LLM
+# Paper Tape LLM (Hugging Face)
 
 A retro-themed chatbot interface that mimics a 1970s Teletype Model 33 ASR printing LLM responses on animated virtual paper tape.
 
@@ -6,24 +6,24 @@ Built with Flask, Matplotlib, and the Hugging Face Inference API (LLaMA-3 or oth
 
 ---
 
-## ✨ Features
+## Features
 
 - 🟣 Blinking LLM LED while generating
 - 🎞 Paper tape visualization using Matplotlib
 - 🔔 Optional ASCII bell audio support
-- 🧠 Supports Hugging Face Inference API or Ollama endpoint
+- 🧠 Uses Hugging Face Inference Endpoints (e.g., LLaMA-3-8B)
 - 🧰 Easily deployable as a Hugging Face Space
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 - Python 3.9+
 - `pip install -r requirements.txt`
 
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/paper-tape-llm.git
@@ -36,7 +36,7 @@ Then open your browser to: [http://localhost:7860](http://localhost:7860)
 
 ---
 
-## 🔧 Config
+## Config
 
 Set this environment variable in `.env` or your server:
 
@@ -44,13 +44,18 @@ Set this environment variable in `.env` or your server:
 HF_TOKEN=your_huggingface_inference_token
 ```
 
-If using Ollama, update the endpoint and model name in `app.py`.
+The token should belong to a Hugging Face Inference Endpoint (e.g., LLaMA 3 model).
 
 ---
 
-## 🖼 Screenshot
+## Screenshots
 
-![teletype screenshot](docs/screenshot.png)
+### Inspired by the MITS Altair 8800 era
+![MITS reference](docs/MITS-boot-loader.jpg)
+
+
+
+![Paper Tape UI](docs/papertape.jpg)
 
 ---
 
