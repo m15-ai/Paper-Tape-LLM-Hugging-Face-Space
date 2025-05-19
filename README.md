@@ -8,11 +8,11 @@ Built with Flask, Matplotlib, and the Hugging Face Inference API (LLaMA-3 or oth
 
 ## Features
 
-- 🟣 Blinking LLM LED while generating
-- 🎞 Paper tape visualization using Matplotlib
-- 🔔 Optional ASCII bell audio support
-- 🧠 Uses Hugging Face Inference Endpoints (e.g., LLaMA-3-8B)
-- 🧰 Easily deployable as a Hugging Face Space
+- Blinking LLM LED while generating
+- Paper tape visualization using Matplotlib
+- Optional ASCII bell audio support
+- Uses Hugging Face Inference Endpoints (e.g., LLaMA-3-8B)
+- Easily deployable as a Hugging Face Space
 
 ---
 
@@ -59,7 +59,7 @@ The token should belong to a Hugging Face Inference Endpoint (e.g., LLaMA 3 mode
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 paper-tape-llm/
@@ -71,12 +71,12 @@ paper-tape-llm/
 
 ---
 
-## 📝 License
+## License
 
 MIT — use freely, credit kindly.
 
 ---
 
-## 💬 Contact
+## Contact
 
 Created by [@m15-ai](https://github.com/m15-ai). Questions or contributions welcome!
